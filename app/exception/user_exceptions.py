@@ -1,0 +1,2 @@
+class UsernameTakenException(Exception):
+    pass

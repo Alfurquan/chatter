@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import health
+from app.api import users
+from app.services.user_service import UserService
 
 # Create FastAPI app
 app = FastAPI(
@@ -20,6 +22,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router)
+app.include_router(users.router)
+
+app.state.user_service = UserService()
 
 @app.get("/")
 async def root():

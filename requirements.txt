@@ -3,4 +3,5 @@ uvicorn>=0.23.2
 pydantic>=2.1.1
 pydantic[email]
 python-jose[cryptography]
-passlib[bcrypt]
+passlib[bcrypt]>=1.7.4
+bcrypt==3.2.2
