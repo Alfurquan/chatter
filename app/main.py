@@ -1,5 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.logging import LoggerFactory
+
+LoggerFactory.create_logger("main", "json")
+
 from app.api import health
 from app.api import users
 from app.services.user_service import UserService
