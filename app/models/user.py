@@ -24,3 +24,14 @@ class UserRegistrationResponse(BaseModel):
     name: str
     username: str
     status: UserStatus
+    
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    username: str
+    status: UserStatus

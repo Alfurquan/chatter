@@ -1,6 +1,6 @@
 import logging
-from app.config.configuration import LOGGING_CONFIG
 import json
+from .config import LOGGING_CONFIG
 
 class StandardFormatter(logging.Formatter):
     """

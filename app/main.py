@@ -6,6 +6,7 @@ LoggerFactory.create_logger("main", "json")
 
 from app.api import health
 from app.api import users
+from app.api import auth
 from app.services.user_service import UserService
 
 # Create FastAPI app
@@ -27,6 +28,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router)
 app.include_router(users.router)
+app.include_router(auth.router)
 
 app.state.user_service = UserService()
 

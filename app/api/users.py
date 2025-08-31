@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, Header
 from fastapi.responses import JSONResponse
 import logging
-
-from ..models.user import UserRegistrationResponse, UserRegistrationRequest
+from ..models.user import UserRegistrationResponse, UserRegistrationRequest, UserResponse
 from ..exception.user_exceptions import UsernameTakenException
+from app.middleware.auth import get_current_user
 
 router = APIRouter()
 logger = logging.getLogger("main.api.users")
@@ -39,3 +39,22 @@ async def register_user(request: Request, user_request: UserRegistrationRequest)
             status_code=500,
             content={"error": str(e)}
         )
+        
+@router.get("/v1/users/me", response_model=UserResponse)
+async def get_me(request: Request, authorization: str = Header(None), current_user: str = Depends(get_current_user)):
+    service = request.app.state.user_service
+    user = service.get_user(current_user)
+    
+    if not user:
+        logger.warning(f"User not found: {current_user}")
+        return JSONResponse(
+            status_code=404,
+            content={"error": "User not found"}
+        )
+    
+    return UserResponse(
+        id=user.id,
+        name=user.name,
+        username=user.username,
+        status=user.status
+    ).to_dict()

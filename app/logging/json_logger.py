@@ -2,7 +2,7 @@ import logging
 
 from .base import BaseLogger
 from .formatters import JsonFormatter
-from app.config.configuration import LOGGING_CONFIG
+from .config import LOGGING_CONFIG
 
 class JsonLogger(BaseLogger):
     """

@@ -2,7 +2,7 @@ from typing import Dict
 import uuid
 from ..models.user import User, UserRegistrationRequest
 from ..exception.user_exceptions import UsernameTakenException
-from ..security.password_security import hash_password
+from ..security.password_security import hash_password, verify_password
 
 class UserService:
     def __init__(self):
@@ -28,5 +28,18 @@ class UserService:
         self.users[user_id] = user
         self.user_name_to_user[username] = user
         return user
-        
-        
+    
+    def authenticate_user(self, username: str, password: str) -> User | None:
+        user = self.user_name_to_user.get(username)
+        if not user:
+            return None
+        if not verify_password(password, user.password):
+            return None
+        return user
+    
+    def get_user(self, username: str) -> User | None:
+        user = self.user_name_to_user.get(username)
+        if not user:
+            return None
+        return user
+  
