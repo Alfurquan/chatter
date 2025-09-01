@@ -1,35 +1,39 @@
-from fastapi import HTTPException, Header
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import HTTPException, Header, Request
 from dotenv import load_dotenv
 from typing import Optional
-import os
-import jwt
+import logging
 
-from app.services.user_service import UserService
 from app.models.user import User
+from ..security.jwt_handler import decode_access_token
 
-# Load environment variables from .env file
 load_dotenv()
+logger = logging.getLogger("main.middleware.auth")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-
-async def get_current_user(authorization: Optional[str] = Header(None)) -> User:
+async def get_current_user(request: Request, authorization: Optional[str] = Header(None)) -> User:
     if not authorization or not authorization.lower().startswith("bearer "):
+        logger.warning("Missing or invalid Authorization header format")
         raise HTTPException(status_code=401, detail="Missing Bearer token")
+    
     token = authorization.split()[1]
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    logger.debug(f"Attempting to validate token")
+    payload = decode_access_token(token)
+    
+    if not payload:
+        logger.warning("Token validation failed")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     
     username = payload.get("sub")
-    user = await UserService().get_user_by_username(username)
+    if not username:
+        logger.warning("Token payload missing 'sub' claim")
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    
+    logger.debug(f"Looking up user: {username}")
+    service = request.app.state.user_service
+    user = service.get_user(username)
+    
     if not user:
+        logger.warning(f"User not found: {username}")
         raise HTTPException(status_code=401, detail="User not found")
+    
+    logger.debug(f"User authenticated: {username}")
     return user

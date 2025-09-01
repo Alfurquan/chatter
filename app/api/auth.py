@@ -29,5 +29,5 @@ async def login(request: Request, login_request: LoginRequest):
             detail="Incorrect username or password"
         )
 
-    token = create_access_token({"sub": user.username})
+    token = create_access_token(user.username)
     return TokenResponse(access_token=token, expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60)

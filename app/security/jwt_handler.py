@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 import os
 import jwt
 
-# Load environment variables from .env file
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -21,8 +20,9 @@ def create_access_token(sub: str, expires_delta: timedelta | None = None) -> str
         "nbf": int(now.timestamp()),
         "exp": int((now + expires_delta).timestamp()),
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
+    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return token
+   
 
 def decode_access_token(token: str):
     try:
