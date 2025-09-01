@@ -8,7 +8,6 @@ from app.middleware.auth import get_current_user
 router = APIRouter()
 logger = logging.getLogger("main.api.users")
 
-
 @router.post("/v1/users/register", response_model=UserRegistrationResponse)
 async def register_user(request: Request, user_request: UserRegistrationRequest):    
     try:

@@ -14,6 +14,14 @@ class User:
     password: str
     status: UserStatus = UserStatus.ONLINE
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "username": self.username,
+            "status": self.status
+        }
+
 class UserRegistrationRequest(BaseModel):
     name: str = Field(..., min_length=1, description="User's full name")
     username: str = Field(..., min_length=3, max_length=50, description="Unique username")
