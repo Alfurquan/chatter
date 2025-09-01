@@ -76,7 +76,14 @@ def make_request(method: str, endpoint: str, data: Dict[str, Any] = None, token:
     
     # Try to parse response as JSON
     try:
-        result = response.json()
+        json_data = response.json()
+                
+        # If the response is a list, convert it to a special format
+        if isinstance(json_data, list):
+            result = {"items": json_data}
+        else:
+            result = json_data
+            
         # Mask sensitive data like tokens if present
         if "access_token" in result:
             display_result = result.copy()
@@ -176,6 +183,50 @@ def create_conversation(token: str, name: str, member_ids: List[str]) -> Dict[st
     
     return response
 
+def create_one_on_one_conversation(token: str, other_user_id: str) -> Dict[str, Any]:
+    """Create a one-on-one conversation with another user"""
+    log(f"Creating one-on-one conversation with user ID: {other_user_id}...", GREEN)
+    
+    # For one-on-one conversations, typically only need the other user's ID
+    # and a default name that can be overridden later
+    conversation_data = {
+        "name": "Private Chat",
+        "member_ids": [other_user_id]
+    }
+    
+    response = make_request("POST", "/v1/conversations", conversation_data, token)
+    
+    if response.get("status_code") == 201:
+        log(f"One-on-one conversation created with ID: {response.get('id', 'unknown')}")
+    else:
+        log(f"Failed to create one-on-one conversation")
+    
+    return response
+
+def list_conversations(token: str) -> Dict[str, Any]:
+    """List all conversations for the current user"""
+    log("Listing user conversations...", GREEN)
+    
+    response = make_request("GET", "/v1/conversations", token=token)
+    if response.get("status_code") == 200:
+        conversations = response.get("items", [])
+        
+        if "status_code" in conversations:
+            del conversations["status_code"]
+            
+        log(f"Retrieved {len(conversations)} conversations")
+        
+        # Print a summary of each conversation
+        for i, conv in enumerate(conversations):
+            conv_type = conv.get("type", "unknown")
+            name = conv.get("name", "Unnamed")
+            member_count = len(conv.get("members", []))
+            log(f"  {i+1}. {name} ({conv_type}) - {member_count} members")
+    else:
+        log(f"Failed to list conversations")
+    
+    return response
+
 def run_tests() -> None:
     """Run all tests in sequence"""
     
@@ -220,7 +271,8 @@ def run_tests() -> None:
             log(f"Failed to verify user {username}")
     
     # Create a group conversation
-    log(f"{BOLD}===== Creating Conversation ====={ENDC}", GREEN)
+    log(f"{BOLD}===== Creating Group Conversation ====={ENDC}", GREEN)
+    group_conversation_id = None
     if len(tokens) >= 2:
         main_user = TEST_USERS[0]["username"]
         token = tokens.get(main_user)
@@ -236,18 +288,63 @@ def run_tests() -> None:
                 )
                 
                 if conversation.get("status_code") == 201:
-                    log("Conversation test passed!", GREEN)
+                    group_conversation_id = conversation.get("id")
+                    log("Group conversation test passed!", GREEN)
                 else:
-                    log("Conversation test failed!", RED)
+                    log("Group conversation test failed!", RED)
             else:
-                log("No registered user IDs available, skipping conversation test", YELLOW)
+                log("No registered user IDs available, skipping group conversation test", YELLOW)
         else:
-            log(f"No token for {main_user}, skipping conversation test", YELLOW)
+            log(f"No token for {main_user}, skipping group conversation test", YELLOW)
     else:
-        log("Not enough logged-in users, skipping conversation test", YELLOW)
+        log("Not enough logged-in users, skipping group conversation test", YELLOW)
+    
+    # Create one-on-one conversations between users
+    log(f"{BOLD}===== Creating One-on-One Conversations ====={ENDC}", GREEN)
+    one_on_one_ids = []
+    
+    if len(registered_users) >= 2:
+        # Get the first user's token
+        main_user = TEST_USERS[0]["username"]
+        main_token = tokens.get(main_user)
+        
+        if main_token:
+            # Create one-on-one conversations with each other user
+            other_users = list(registered_users.keys())
+            other_users.remove(main_user)
+            
+            for other_user in other_users:
+                other_id = registered_users.get(other_user)
+                if other_id:
+                    conversation = create_one_on_one_conversation(
+                        token=main_token,
+                        other_user_id=other_id
+                    )
+                    
+                    if conversation.get("status_code") == 201:
+                        one_on_one_ids.append(conversation.get("id"))
+                        log(f"One-on-one conversation with {other_user} created successfully", GREEN)
+                    else:
+                        log(f"Failed to create one-on-one conversation with {other_user}", RED)
+        else:
+            log(f"No token for {main_user}, skipping one-on-one conversation tests", YELLOW)
+    else:
+        log("Not enough registered users, skipping one-on-one conversation tests", YELLOW)
+    
+    # List conversations for each user
+    log(f"{BOLD}===== Listing User Conversations ====={ENDC}", GREEN)
+    for username, token in tokens.items():
+        log(f"Listing conversations for user: {username}", BLUE)
+        list_conversations(token)
     
     print("============================")
     print(f"{GREEN}Test run completed!{ENDC}")
+    
+    # Print a summary of created resources
+    print(f"{BOLD}===== Test Summary ====={ENDC}")
+    print(f"Registered Users: {len(registered_users)}")
+    print(f"Created Group Conversations: {1 if group_conversation_id else 0}")
+    print(f"Created One-on-One Conversations: {len(one_on_one_ids)}")
 
 if __name__ == "__main__":
     try:

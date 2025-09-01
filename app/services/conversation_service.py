@@ -37,4 +37,9 @@ class ConversationService:
         self.conversations[conversation_id] = conversation
         return conversation
 
-  
+    def get_user_conversations(self, username: str) -> List[Conversation]:
+        return [
+            conv for conv in self.conversations.values() 
+                if conv.creator.username == username or 
+                username in [member.username for member in conv.members]
+            ]
