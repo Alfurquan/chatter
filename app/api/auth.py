@@ -1,10 +1,19 @@
 from fastapi import APIRouter, HTTPException, Request
 import logging
+import os
+from dotenv import load_dotenv
+
 from ..security.jwt_handler import create_access_token
-from app.models.user import LoginRequest
+from app.models.auth import TokenResponse, LoginRequest
 
 router = APIRouter()
 logger = logging.getLogger("main.api.users")
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 @router.post("/v1/users/login")
 async def login(request: Request, login_request: LoginRequest):
@@ -21,4 +30,4 @@ async def login(request: Request, login_request: LoginRequest):
         )
 
     token = create_access_token({"sub": user.username})
-    return {"access_token": token, "token_type": "bearer"}
+    return TokenResponse(access_token=token, expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60)

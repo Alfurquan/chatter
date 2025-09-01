@@ -26,10 +26,6 @@ class UserRegistrationResponse(BaseModel):
     status: UserStatus
     
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-    
 class UserResponse(BaseModel):
     id: str
     name: str
