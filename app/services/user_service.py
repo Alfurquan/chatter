@@ -42,4 +42,9 @@ class UserService:
         if not user:
             return None
         return user
-  
+    
+    def get_user_by_id(self, id: str) -> User | None:
+        user = self.users.get(id)
+        if not user:
+            return None
+        return user

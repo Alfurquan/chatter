@@ -2,9 +2,9 @@ from typing import Dict, List
 import uuid
 import time
 
-from app.models.user import User
+from app.models.user import User, UserResponse
 from app.services.user_service import UserService
-from app.models.conversation import Conversation, ConversationType, CreateConversationRequest
+from app.models.conversation import Conversation, ConversationType, CreateConversationRequest, ConversationResponse
 from app.exception.user_exceptions import UserNotFoundException
 
 class ConversationService:
@@ -19,18 +19,18 @@ class ConversationService:
             raise UserNotFoundException("Creator not found")
 
         members: List[User] = []
-        for member_ids in request.member_ids:
-            user = self.user_service.users.get(member_ids)
+        for member_id in request.member_ids:
+            user = self.user_service.users.get(member_id)
             if not user:
-               raise UserNotFoundException(f"User not found for id: {member_ids}")
-            members.append(user)
+               raise UserNotFoundException(f"User not found for id: {member_id}")
+            members.append(member_id)
 
         conversation = Conversation(
             id=conversation_id,
             name=request.name,
-            members=members,
+            member_ids=members,
             created_at=time.time(),
-            creator=creator,
+            creator_id=creator.id,
             type=ConversationType.GROUP if len(members) > 1 else ConversationType.ONE_ON_ONE,
         )
         
@@ -38,8 +38,27 @@ class ConversationService:
         return conversation
 
     def get_user_conversations(self, username: str) -> List[Conversation]:
+        user = self.user_service.get_user(username)
         return [
             conv for conv in self.conversations.values() 
-                if conv.creator.username == username or 
-                username in [member.username for member in conv.members]
+                if conv.creator_id == user.id or 
+                user.id in [member_id for member_id in conv.member_ids]
             ]
+        
+    def get_conversation_by_id(self, conversation_id: str) -> Conversation | None:
+        return self.conversations.get(conversation_id)
+
+    def get_conversation_response(self, conversation_id: str) -> ConversationResponse:
+        conversation = self.get_conversation_by_id(conversation_id)
+        creator_dict = self.user_service.get_user_by_id(conversation.creator_id).to_dict()
+        
+        members_list = [self.user_service.get_user_by_id(member_id).to_dict() for member_id in conversation.member_ids]
+        
+        return ConversationResponse(
+            id=conversation.id,
+            name=conversation.name,
+            creator=UserResponse(**creator_dict),
+            created_at=conversation.created_at,
+            members=[UserResponse(**member_dict) for member_dict in members_list],
+            type=conversation.type
+        )

@@ -84,3 +84,7 @@ Throughout each phase, document:
 - Challenges encountered and how you solved them  
 - Performance observations  
 - Tradeoffs you considered  
+
+## Bonus
+
+Enhance Current Project Instead: Consider whether you can incorporate some Top K elements into your existing chat app (like "trending chats" or "most active users"), giving you the best of both worlds.

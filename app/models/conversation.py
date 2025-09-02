@@ -13,8 +13,8 @@ class ConversationType(str, Enum):
 class Conversation:
     id: str
     name: str
-    creator: User
-    members: List[User]
+    creator_id: str
+    member_ids: List[str]
     created_at: float
     type: ConversationType
 
@@ -22,8 +22,8 @@ class Conversation:
         return {
             "id": self.id,
             "name": self.name,
-            "creator": self.creator.to_dict(),
-            "members": [member.to_dict() for member in self.members],
+            "creator_id": self.creator_id,
+            "member_ids": self.member_ids,
             "created_at": self.created_at,
             "type": self.type,
         }

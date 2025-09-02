@@ -6,7 +6,6 @@ from typing import List
 from ..models.conversation import CreateConversationRequest, ConversationResponse
 from ..exception.user_exceptions import UserNotFoundException
 from app.middleware.auth import get_current_user
-from app.models.user import UserResponse
 
 router = APIRouter()
 logger = logging.getLogger("main.api.conversation")
@@ -23,24 +22,11 @@ async def create_conversation(
             conversation_request, current_user.username
         )
         
-        creator_dict = conversation.creator.dict() if hasattr(conversation.creator, 'dict') else vars(conversation.creator)
-        
-        members_list = []
-        for member in conversation.members:
-            member_dict = member.dict() if hasattr(member, 'dict') else vars(member)
-            members_list.append(UserResponse(**member_dict))
-        
         return JSONResponse(
             status_code=201, 
-            content=ConversationResponse(
-                id=conversation.id,
-                name=conversation.name,
-                creator=UserResponse(**creator_dict),
-                created_at=conversation.created_at,
-                members=members_list,
-                type=conversation.type
-            ).dict())
-    
+            content=conversation_service.get_conversation_response(conversation.id).dict()
+        )
+
     except UserNotFoundException as e:
         logger.warning(f"User not found: {e}")
         return JSONResponse(status_code=404, content={"detail": str(e)})
@@ -55,9 +41,13 @@ async def get_conversations(request: Request, current_user = Depends(get_current
         conversation_service = request.app.state.conversation_service
         conversations = conversation_service.get_user_conversations(current_user.username)
         
+        conversation_reponses = [
+            conversation_service.get_conversation_response(conv.id).dict() for conv in conversations
+        ]
+        
         return JSONResponse(
             status_code=200,
-            content=[ConversationResponse(**conv.to_dict()).dict() for conv in conversations]
+            content=conversation_reponses
         )
 
     except Exception as e:
