@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.user import User, UserResponse
 from app.models.conversation import Conversation, ConversationResponse
@@ -37,7 +37,7 @@ class Message:
        }
 
 class MessageCreateRequest(BaseModel):
-    content: str
+    content: str = Field(..., min_length=3, max_length=200, description="Message content")
     type: MessageType = MessageType.TEXT
     conversation_id: str
     
