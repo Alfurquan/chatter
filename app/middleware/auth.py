@@ -29,7 +29,7 @@ async def get_current_user(request: Request, authorization: Optional[str] = Head
     
     logger.debug(f"Looking up user: {username}")
     service = request.app.state.user_service
-    user = service.get_user(username)
+    user = service.get_user_by_id(username)
     
     if not user:
         logger.warning(f"User not found: {username}")

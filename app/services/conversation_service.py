@@ -62,3 +62,9 @@ class ConversationService:
             members=[UserResponse(**member_dict) for member_dict in members_list],
             type=conversation.type
         )
+        
+    def check_if_user_has_access_to_conversation(self, user_id: str, conversation_id: str) -> bool:
+        conversation = self.get_conversation_by_id(conversation_id)
+        if not conversation:
+            return False
+        return conversation.creator_id == user_id or user_id in conversation.member_ids

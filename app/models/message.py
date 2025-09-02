@@ -20,10 +20,11 @@ class Message:
     id: str
     sender_id: str
     content: str
-    type: MessageType = MessageType.TEXT
-    status: MessageDeliveryStatus = MessageDeliveryStatus.PENDING
     conversation_id: str
     timestamp: float
+    type: MessageType = MessageType.TEXT
+    status: MessageDeliveryStatus = MessageDeliveryStatus.PENDING
+    
 
     def to_dict(self):
        return {

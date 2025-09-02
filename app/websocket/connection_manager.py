@@ -30,7 +30,7 @@ class ConnectionManager:
         if conversation_id in self.active_connections:
             self.active_connections[conversation_id].pop(user_id, None)
 
-    async def broadcast(self, conversation_id: str, message: str):
+    async def broadcast(self, conversation_id: str, message: dict):
         """
         Send a message to all WebSocket connections in a conversation.
         @param conversation_id: The ID of the conversation.
@@ -38,4 +38,4 @@ class ConnectionManager:
         """
         if conversation_id in self.active_connections:
             for user_id, websocket in self.active_connections[conversation_id].items():
-                await websocket.send_text(message)
+                await websocket.send_json(message)

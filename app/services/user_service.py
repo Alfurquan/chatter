@@ -1,6 +1,6 @@
 from typing import Dict
 import uuid
-from ..models.user import User, UserRegistrationRequest
+from ..models.user import User, UserRegistrationRequest, UserResponse
 from ..exception.user_exceptions import UsernameTakenException
 from ..security.password_security import hash_password, verify_password
 
@@ -48,3 +48,15 @@ class UserService:
         if not user:
             return None
         return user
+    
+    def get_user_response(self, id: str) -> UserResponse | None:
+        user = self.get_user_by_id(id)
+        if not user:
+            return None
+        
+        return UserResponse(
+            id=user.id,
+            name=user.name,
+            username=user.username,
+            status=user.status
+        )

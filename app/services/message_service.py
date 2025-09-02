@@ -1,7 +1,12 @@
 from typing import Dict, List
 from threading import Lock
-from app.models.message import Message, MessageType, MessageDeliveryStatus
+import time
+import uuid
 
+from app.models.message import Message, MessageCreateRequest, MessageDeliveryStatus, MessageResponse
+from app.models.user import UserResponse
+from app.services.user_service import UserService
+from app.services.conversation_service import ConversationService
 
 class MessageService:
     def __init__(self):
@@ -15,7 +20,6 @@ class MessageService:
         Args:
             message: Message to add.
         """
-        
         with self.lock:
             if message.conversation_id not in self.messages:
                 self.messages[message.conversation_id] = []
@@ -109,3 +113,56 @@ class MessageService:
                     updated_count += 1
 
             return updated_count
+        
+    def create_message(self, request: MessageCreateRequest, sender_id: str) -> Message:
+        """
+        Create a new message from the request.
+
+        Args:
+            request: The request containing the message data.
+            sender_id: The ID of the user sending the message.
+
+        Returns
+            The created message
+        """
+        message = Message(
+            id=str(uuid.uuid4()),
+            content=request.content,
+            sender_id=sender_id,
+            conversation_id=request.conversation_id,
+            timestamp=time.time(),
+            status=MessageDeliveryStatus.PENDING
+        )
+        self.add_message(message)
+        return message
+
+    def create_message_response(self, message: Message, user_service: UserService, conversation_service: ConversationService) -> MessageResponse:
+        """
+        Create a full MessageResponse object for a message.
+
+        Args:
+            message: The message object
+            user_service: Service to look up user details
+            conversation_service: Service to look up conversation details
+
+        Returns:
+            A MessageResponse object with all related data
+        """
+
+        # Get sender details
+        sender = user_service.get_user_by_id(message.sender_id)
+        sender_response = user_service.get_user_response(message.sender_id)
+
+        # Get conversation details
+        conversation = conversation_service.get_conversation_by_id(message.conversation_id)
+        conversation_response = conversation_service.get_conversation_response(message.conversation_id)
+
+        return MessageResponse(
+            id=message.id,
+            sender=sender_response,
+            content=message.content,
+            type=message.type,
+            status=message.status,
+            conversation=conversation_response,
+            timestamp=message.timestamp
+        )
