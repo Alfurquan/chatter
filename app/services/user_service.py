@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 import uuid
 from ..models.user import User, UserRegistrationRequest, UserResponse
 from ..exception.user_exceptions import UsernameTakenException
@@ -60,3 +60,7 @@ class UserService:
             username=user.username,
             status=user.status
         )
+        
+    def get_all_users(self) -> List[User]:
+        """Get all registered users"""
+        return list(self.users.values())

@@ -47,3 +47,24 @@ async def me(user=Depends(get_current_user)):
         username=user.username,
         status=user.status
     )
+    
+@router.get("/v1/users")
+async def get_all_users(request: Request, current_user = Depends(get_current_user)):
+    """Get all users except the current user"""
+    try:
+        service = request.app.state.user_service
+        users = service.get_all_users()
+        
+        # Filter out the current user from the results
+        other_users = [user for user in users if user.id != current_user.id]
+        logger.info(f"Retrieved {len(other_users)} users excluding current user {current_user.username}")
+        return JSONResponse(
+            status_code=200,
+            content=[service.get_user_response(user.id).dict() for user in other_users]
+        )
+    except Exception as e:
+        logger.error(f"Error retrieving users: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal Server Error"}
+        )

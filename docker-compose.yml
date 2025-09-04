@@ -11,3 +11,14 @@ services:
       - "8000:8000"
     environment:
       - PYTHONPATH=/app
+  
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    volumes:
+      - ./ui:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api

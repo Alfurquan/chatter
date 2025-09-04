@@ -1,7 +1,10 @@
+from app.models.message import MessageResponse
+from app.services.message_service import MessageService
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 import logging
 from typing import List
+import time
 
 from ..models.conversation import CreateConversationRequest, ConversationResponse
 from ..exception.user_exceptions import UserNotFoundException
@@ -52,4 +55,32 @@ async def get_conversations(request: Request, current_user = Depends(get_current
 
     except Exception as e:
         logger.error(f"Error fetching conversations: {e}")
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
+@router.get("/v1/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
+async def get_conversation_messages(
+    request: Request,
+    conversation_id: str,
+    user_id = Depends(get_current_user)
+):
+    try:
+        message_service: MessageService = request.app.state.message_service
+        messages = message_service.get_messages(conversation_id, before_timestamp=time.time())
+        conversation_service = request.app.state.conversation_service
+        
+        if not conversation_service.check_if_user_has_access_to_conversation(user_id, conversation_id):
+            logger.info(f"User {user_id} attempted to send message to unauthorized conversation {conversation_id}")
+            return JSONResponse(status_code=403, content={"detail": "Unauthorized access to conversation"})
+
+        responses: List[MessageResponse] = []
+        for msg in messages:
+            msg_response = message_service.create_message_response(
+                msg, request.app.state.user_service, request.app.state.conversation_service
+            )
+            responses.append(msg_response)
+
+        return responses
+
+    except Exception as e:
+        logger.error(f"Error fetching conversation messages: {e}")
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
