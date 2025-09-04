@@ -38,7 +38,7 @@ class Message:
        }
 
 class MessageCreateRequest(BaseModel):
-    content: str = Field(..., min_length=3, max_length=200, description="Message content")
+    content: str = Field(..., min_length=1, max_length=200, description="Message content")
     type: MessageType = MessageType.TEXT
     conversation_id: str
     

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, status, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, Query, WebSocketDisconnect
 import logging
 import json
 
@@ -8,26 +8,18 @@ from app.models.message import MessageCreateRequest
 router = APIRouter()
 logger = logging.getLogger("main.websocket.routes")
 
-async def get_user_id_from_ws(websocket: WebSocket) -> str:
-    auth_header = websocket.headers.get("authorization")
-    
-    if not auth_header or not auth_header.startswith("Bearer "):
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return None
-    
-    token = auth_header.split(" ")[1]
-    
+async def get_user_id_from_token(token: str) -> str:
     payload = decode_access_token(token)
+    logger.info(f"WebSocket connection attempt with token payload: {payload}")
     
     if not payload or "sub" not in payload:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return None
     
     return payload["sub"]
 
 @router.websocket("/ws/{conversation_id}")
-async def websocket_endpoint(websocket: WebSocket, conversation_id: str):
-    user_id = await get_user_id_from_ws(websocket)
+async def websocket_endpoint(websocket: WebSocket, conversation_id: str, token: str = Query(None)):
+    user_id = await get_user_id_from_token(token)
     message_service = websocket.app.state.message_service
     manager = websocket.app.state.connection_manager
     conversation_service = websocket.app.state.conversation_service
@@ -40,6 +32,7 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id: str):
     try:
         while True:
             data_json = json.loads(await websocket.receive_text())
+            data_json["conversation_id"] = conversation_id
             message_request = MessageCreateRequest(**data_json)
             message = message_service.create_message(message_request, user_id)
             
@@ -49,7 +42,7 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id: str):
                 continue
 
             logger.info(f"User {user_id} sent a message in conversation {conversation_id}: {message.content}")
-            message_response = message_service.create_message_response(message.id, websocket.app.state.user_service, conversation_service)
+            message_response = message_service.create_message_response(message, websocket.app.state.user_service, conversation_service)
             await manager.broadcast(conversation_id, message_response.dict())
 
     except Exception as e:

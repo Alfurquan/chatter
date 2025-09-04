@@ -22,18 +22,18 @@ async def get_current_user(request: Request, authorization: Optional[str] = Head
         logger.warning("Token validation failed")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    username = payload.get("sub")
-    if not username:
+    user_id = payload.get("sub")
+    if not user_id:
         logger.warning("Token payload missing 'sub' claim")
         raise HTTPException(status_code=401, detail="Invalid token payload")
     
-    logger.debug(f"Looking up user: {username}")
+    logger.debug(f"Looking up user: {user_id}")
     service = request.app.state.user_service
-    user = service.get_user_by_id(username)
+    user = service.get_user_by_id(user_id)
     
     if not user:
-        logger.warning(f"User not found: {username}")
+        logger.warning(f"User not found: {user_id}")
         raise HTTPException(status_code=401, detail="User not found")
     
-    logger.debug(f"User authenticated: {username}")
+    logger.debug(f"User authenticated: {user_id}")
     return user

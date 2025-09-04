@@ -61,15 +61,15 @@ async def get_conversations(request: Request, current_user = Depends(get_current
 async def get_conversation_messages(
     request: Request,
     conversation_id: str,
-    user_id = Depends(get_current_user)
+    user = Depends(get_current_user)
 ):
     try:
         message_service: MessageService = request.app.state.message_service
         messages = message_service.get_messages(conversation_id, before_timestamp=time.time())
         conversation_service = request.app.state.conversation_service
-        
-        if not conversation_service.check_if_user_has_access_to_conversation(user_id, conversation_id):
-            logger.info(f"User {user_id} attempted to send message to unauthorized conversation {conversation_id}")
+
+        if not conversation_service.check_if_user_has_access_to_conversation(user.id, conversation_id):
+            logger.info(f"User {user.name} attempted to view messages in unauthorized conversation {conversation_id}")
             return JSONResponse(status_code=403, content={"detail": "Unauthorized access to conversation"})
 
         responses: List[MessageResponse] = []

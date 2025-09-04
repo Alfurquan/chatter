@@ -24,7 +24,9 @@ class ConversationService:
             if not user:
                raise UserNotFoundException(f"User not found for id: {member_id}")
             members.append(member_id)
-
+        
+        members.append(creator.id)
+            
         conversation = Conversation(
             id=conversation_id,
             name=request.name,
