@@ -149,20 +149,12 @@ class MessageService:
             A MessageResponse object with all related data
         """
 
-        # Get sender details
-        sender = user_service.get_user_by_id(message.sender_id)
-        sender_response = user_service.get_user_response(message.sender_id)
-
-        # Get conversation details
-        conversation = conversation_service.get_conversation_by_id(message.conversation_id)
-        conversation_response = conversation_service.get_conversation_response(message.conversation_id)
-
         return MessageResponse(
             id=message.id,
-            sender=sender_response,
+            sender=user_service.get_user_response(message.sender_id),
             content=message.content,
             type=message.type,
             status=message.status,
-            conversation=conversation_response,
+            conversation=conversation_service.get_conversation_response(message.conversation_id),
             timestamp=message.timestamp
         )

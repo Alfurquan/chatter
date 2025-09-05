@@ -1,7 +1,6 @@
 from typing import Dict, List
 import uuid
 from ..models.user import User, UserRegistrationRequest, UserResponse
-from ..exception.user_exceptions import UsernameTakenException
 from ..security.password_security import hash_password, verify_password
 
 class UserService:
@@ -11,9 +10,6 @@ class UserService:
         
     def add_user(self, user_request: UserRegistrationRequest) -> User:
         username = user_request.username
-        
-        if username in self.user_name_to_user:
-            raise UsernameTakenException()
         
         hashed_password = hash_password(user_request.password)
         

@@ -16,6 +16,7 @@ class JsonFormatter(logging.Formatter):
     """
     def __init__(self, fmt=None, datefmt=None):
         super().__init__(fmt=fmt, datefmt=datefmt)
+        self.reserved_attrs = set(logging.LogRecord(None, None, "", 0, "", (), None).__dict__.keys())
     
     def format(self, record):
         log_record = {
@@ -24,6 +25,8 @@ class JsonFormatter(logging.Formatter):
             "time": self.formatTime(record, self.datefmt),
             "logger": record.name,
         }
-        if hasattr(record, "extra"):
-            log_record.update(record.extra)
+        for key, value in record.__dict__.items():
+            if key not in self.reserved_attrs:
+                log_record[key] = value
+       
         return json.dumps(log_record)

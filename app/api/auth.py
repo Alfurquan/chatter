@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request
+from app.error.error import APIException, ErrorCode
+from fastapi import APIRouter, Request
 import logging
 import os
 from dotenv import load_dotenv
@@ -17,16 +18,27 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 @router.post("/v1/users/login")
 async def login(request: Request, login_request: LoginRequest):
+    
+    logger.info(f"Login request for {login_request.username}",
+        extra={
+        "request_id": request.state.request_id,
+        "username": login_request.username
+    })
+    
     service = request.app.state.user_service
     user = service.authenticate_user(login_request.username, login_request.password)
 
     if not user:
-        logger.warning(f"Logging failed for {login_request.username}", extra={
+        logger.warning(f"Logging failed for {login_request.username}", 
+        extra={
+            "request_id": request.state.request_id,
             "username": login_request.username
         })
-        raise HTTPException(
+        raise APIException(
+            code=ErrorCode.UNAUTHORIZED,
             status_code=401,
-            detail="Incorrect username or password"
+            message="Invalid username or password",
+            details={"username": login_request.username}
         )
 
     token = create_access_token(user.id)

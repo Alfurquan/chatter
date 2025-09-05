@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 usersList.appendChild(userItem);
             });
         } catch (error) {
-            console.error('Error loading users:', error);
+            console.error('Error loading users:', error.message);
             usersList.innerHTML = '<div class="loading-indicator">Failed to load users</div>';
         }
     }

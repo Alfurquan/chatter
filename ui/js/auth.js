@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Login form submission
     const loginButton = document.getElementById('login-button');
-    loginButton.addEventListener('click', async () => {
+    loginButton.addEventListener('click', async (e) => {
+        e.preventDefault();
         const username = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
         const errorElement = document.getElementById('login-error');
@@ -57,7 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Register form submission
     const registerButton = document.getElementById('register-button');
-    registerButton.addEventListener('click', async () => {
+    registerButton.addEventListener('click', async (e) => {
+        e.preventDefault();
         const name = document.getElementById('register-name').value;
         const username = document.getElementById('register-username').value;
         const password = document.getElementById('register-password').value;

@@ -13,6 +13,9 @@ from app.services.conversation_service import ConversationService
 from app.services.message_service import MessageService 
 from app.websocket import router as websocket_router
 from app.websocket.connection_manager import ConnectionManager
+from app.error.error import api_exception_handler, APIException
+from app.middleware.sanity import RequestIDMiddleware
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,6 +32,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include error handler
+app.add_exception_handler(APIException, api_exception_handler)
+
+# Include middleware
+app.add_middleware(RequestIDMiddleware)
 
 # Include routers
 app.include_router(health.router)

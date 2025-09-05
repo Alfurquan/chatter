@@ -35,7 +35,14 @@ const API = {
         
         // Handle error responses
         if (!response.ok) {
-            throw new Error(data.detail || 'Something went wrong');
+            let errorMsg = 'Something went wrong';
+            if (data && data.error) {
+                errorMsg = data.error.message || errorMsg;
+                // Optionally, you can use data.error.code for more specific handling
+            } else if (data.detail) {
+                errorMsg = data.detail;
+            }
+            throw new Error(errorMsg);
         }
         
         return data;

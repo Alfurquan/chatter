@@ -5,35 +5,22 @@ import time
 from app.models.user import User, UserResponse
 from app.services.user_service import UserService
 from app.models.conversation import Conversation, ConversationType, CreateConversationRequest, ConversationResponse
-from app.exception.user_exceptions import UserNotFoundException
 
 class ConversationService:
     def __init__(self, user_service: UserService):
         self.conversations: Dict[str, Conversation] = {}
         self.user_service = user_service
         
-    def create_conversation(self, request: CreateConversationRequest, creator_username: str) -> Conversation:
+    def create_conversation(self, request: CreateConversationRequest, creator: User) -> Conversation:
         conversation_id = str(uuid.uuid4())
-        creator = self.user_service.get_user(creator_username)
-        if not creator:
-            raise UserNotFoundException("Creator not found")
-
-        members: List[User] = []
-        for member_id in request.member_ids:
-            user = self.user_service.users.get(member_id)
-            if not user:
-               raise UserNotFoundException(f"User not found for id: {member_id}")
-            members.append(member_id)
-        
-        members.append(creator.id)
             
         conversation = Conversation(
             id=conversation_id,
             name=request.name,
-            member_ids=members,
+            member_ids=request.member_ids + [creator.id],
             created_at=time.time(),
             creator_id=creator.id,
-            type=ConversationType.GROUP if len(members) > 1 else ConversationType.ONE_ON_ONE,
+            type=ConversationType.GROUP if len(request.member_ids) > 1 else ConversationType.ONE_ON_ONE,
         )
         
         self.conversations[conversation_id] = conversation
