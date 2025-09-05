@@ -23,12 +23,12 @@ const API = {
             headers
         });
         
-        // Handle unauthorized responses
-        if (response.status === 401) {
-            localStorage.removeItem('token');
-            window.location.href = 'index.html';
-            throw new Error('Unauthorized - Please log in again');
-        }
+        // // Handle unauthorized responses
+        // if (response.status === 401) {
+        //     localStorage.removeItem('token');
+        //     window.location.href = 'index.html';
+        //     throw new Error('Unauthorized - Please log in again');
+        // }
         
         // Parse JSON response
         const data = await response.json();
@@ -36,6 +36,10 @@ const API = {
         // Handle error responses
         if (!response.ok) {
             let errorMsg = 'Something went wrong';
+            if(response.status === 401){
+                localStorage.removeItem('token');
+            }
+
             if (data && data.error) {
                 errorMsg = data.error.message || errorMsg;
                 // Optionally, you can use data.error.code for more specific handling
