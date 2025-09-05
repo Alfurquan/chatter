@@ -168,6 +168,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    height: 100%;  /* Ensure full height */
 }
 
 .no-conversation-message {
@@ -177,6 +178,13 @@ body {
     align-items: center;
     color: #999;
     text-align: center;
+}
+
+/* Updated conversation view styling */
+#conversation-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;  /* Take full height */
 }
 
 .conversation-header {
@@ -190,12 +198,14 @@ body {
     margin-top: 5px;
 }
 
+/* Updated messages container to scroll properly */
 .messages-container {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
     display: flex;
     flex-direction: column;
+    min-height: 0;  /* Important for flexbox scroll to work properly */
 }
 
 .message {
@@ -233,19 +243,53 @@ body {
     text-align: right;
 }
 
+/* Fixed message input container */
 .message-input-container {
     padding: 15px;
     border-top: 1px solid #ddd;
     display: flex;
+    position: relative; /* Add this to position the button inside */
+    min-height: 70px;
+    max-height: 70px;
 }
 
 .message-input-container input {
     flex: 1;
     padding: 10px 15px;
+    padding-right: 45px; /* Space for the button */
     border: 1px solid #ddd;
     border-radius: 20px;
-    margin-right: 10px;
     font-size: 16px;
+    height: 40px;
+    max-height: 40px;
+}
+
+/* Style for the embedded send button */
+.message-input-container .send-button {
+    position: absolute;
+    right: 25px; /* Position from the right edge of the container */
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #4a69bd;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* Icon for the send button */
+.message-input-container .send-button i {
+    font-size: 16px;
+}
+
+/* Add hover effect */
+.message-input-container .send-button:hover {
+    background-color: #3c58a8;
 }
 
 /* Modal styles */
