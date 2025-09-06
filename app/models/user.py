@@ -33,7 +33,6 @@ class UserRegistrationResponse(BaseModel):
     username: str
     status: UserStatus
     
-
 class UserResponse(BaseModel):
     id: str
     name: str

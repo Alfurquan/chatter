@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, Header
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 import logging
 from ..models.user import UserRegistrationResponse, UserRegistrationRequest, UserResponse
@@ -18,13 +18,17 @@ async def register_user(request: Request, user_request: UserRegistrationRequest)
                         })
         
         service = request.app.state.user_service
-        if service.get_user(user_request.username):
+        logger.info(f"Checking if username {user_request.username} is already taken")
+        user = service.get_user(user_request.username)
+        logger.info(f"User lookup result for username {user_request.username}: {user}")
+        if user:
             raise APIException(
                 code=ErrorCode.INVALID_REQUEST,
                 message="Username already taken",
                 details={"username": user_request.username}
             )
         
+        logger.info(f"Registering new user: {user_request.username}")
         user = service.add_user(user_request)
 
         logger.info(f"User registered: {user.username} (ID: {user.id})",
@@ -43,7 +47,7 @@ async def register_user(request: Request, user_request: UserRegistrationRequest)
             ).dict()
         )
     except Exception as e:
-        logger.error(f"Error occurred while registering user: {str(e)}",
+        logger.error(f"Error occurred while registering user: {e}",
                      extra={
                          "request_id": request.state.request_id,
                          "username": user_request.username

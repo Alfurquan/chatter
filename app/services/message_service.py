@@ -1,17 +1,16 @@
-from typing import Dict, List
-from threading import Lock
-import time
-import uuid
+from typing import List
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
+from app.db import get_db
+from app.repositories.message_repository import MessageRepository
 from app.models.message import Message, MessageCreateRequest, MessageDeliveryStatus, MessageResponse
-from app.models.user import UserResponse
 from app.services.user_service import UserService
 from app.services.conversation_service import ConversationService
 
 class MessageService:
-    def __init__(self):
-        self.messages: Dict[str, List[Message]] = {}
-        self.lock = Lock()
+    def __init__(self, db: Session = Depends(get_db)):
+        self.repo = MessageRepository(db)
 
     def add_message(self, message: Message):
         """
@@ -20,10 +19,8 @@ class MessageService:
         Args:
             message: Message to add.
         """
-        with self.lock:
-            if message.conversation_id not in self.messages:
-                self.messages[message.conversation_id] = []
-            self.messages[message.conversation_id].append(message)
+        # This method is not needed anymore as the repository handles persistence
+        pass
     
     def get_messages(self, conversation_id: str, limit: int = 50, before_timestamp: float = None) -> List[Message]:
         """
@@ -36,22 +33,7 @@ class MessageService:
         Returns
             List of messages
         """
-        with self.lock:
-            messages = self.messages.get(conversation_id, [])
-
-            if not messages or before_timestamp is None:
-                return sorted(messages, key=lambda msg: msg.timestamp, reverse=True)[:limit]
-
-            sorted_messages = sorted(messages, key=lambda msg: msg.timestamp, reverse=True)
-
-            filtered_messages = []
-            for msg in sorted_messages:
-                if msg.timestamp < before_timestamp:
-                    filtered_messages.append(msg)
-                    if len(filtered_messages) >= limit:
-                        break
-
-            return filtered_messages
+        return self.repo.get_conversation_messages(conversation_id, limit, before_timestamp)
 
     def check_if_message_exists(self, conversation_id: str, message_id: str) -> bool:
         """
@@ -64,14 +46,8 @@ class MessageService:
         Returns:
             True if the message exists, False otherwise
         """
-        
-        with self.lock:
-            messages = self.messages.get(conversation_id, [])
-            for message in messages:
-                if message.id == message_id:
-                    return True
-            return False
-        
+        message = self.repo.get_by_id(message_id)
+        return message is not None and str(message.conversation_id) == conversation_id
     
     def update_messages_status(
         self, 
@@ -94,25 +70,10 @@ class MessageService:
         Returns:
             Number of messages that were updated
         """
-        with self.lock:
-            messages = self.messages.get(conversation_id, [])
-            updated_count = 0
-
-            for message in messages:
-                if message_ids is not None and message.id not in message_ids:
-                    continue
-
-                if before_timestamp is not None and message.timestamp >= before_timestamp:
-                    continue
-
-                if sender_id is not None and message.sender_id != sender_id:
-                    continue
-                
-                if message.status != status:
-                    message.status = status
-                    updated_count += 1
-
-            return updated_count
+        if message_ids:
+            return self.repo.update_status(message_ids, status)
+        else:
+            return self.repo.update_status_by_criteria(conversation_id, before_timestamp, sender_id, status)
         
     def create_message(self, request: MessageCreateRequest, sender_id: str) -> Message:
         """
@@ -125,16 +86,7 @@ class MessageService:
         Returns
             The created message
         """
-        message = Message(
-            id=str(uuid.uuid4()),
-            content=request.content,
-            sender_id=sender_id,
-            conversation_id=request.conversation_id,
-            timestamp=time.time(),
-            status=MessageDeliveryStatus.PENDING
-        )
-        self.add_message(message)
-        return message
+        return self.repo.create(request, sender_id)
 
     def create_message_response(self, message: Message, user_service: UserService, conversation_service: ConversationService) -> MessageResponse:
         """
@@ -148,13 +100,12 @@ class MessageService:
         Returns:
             A MessageResponse object with all related data
         """
-
         return MessageResponse(
-            id=message.id,
-            sender=user_service.get_user_response(message.sender_id),
+            id=str(message.id),
+            sender=user_service.get_user_response(str(message.sender_id)),
             content=message.content,
             type=message.type,
             status=message.status,
-            conversation=conversation_service.get_conversation_response(message.conversation_id),
+            conversation=conversation_service.get_conversation_response(str(message.conversation_id)),
             timestamp=message.timestamp
         )
