@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageInput = document.getElementById('message-input');
     const sendMessageBtn = document.getElementById('send-message-btn');
     const usernameElement = document.getElementById('username');
+    let oldestMessageTimestamp = null; // Track oldest loaded message timestamp
     
     // Modal elements
     const newConversationBtn = document.getElementById('new-conversation-btn');
@@ -125,41 +126,93 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Load messages for a conversation
-    async function loadMessages(conversationId) {
+    async function loadMessages(conversationId, before = null, append = false) {
         try {
-            messagesContainer.innerHTML = '<div class="loading-indicator">Loading messages...</div>';
+            if (!append) {
+                messagesContainer.innerHTML = '<div class="loading-indicator">Loading messages...</div>';
+                oldestMessageTimestamp = null;
+            }
             
-            const messages = await API.getConversationMessages(conversationId);
+            // Add query parameters for pagination if 'before' is provided
+            const messages = await API.getConversationMessages(conversationId, before ? { limit: 20, before } : { limit: 20 });
             
-            messagesContainer.innerHTML = '';
+            if (!append) {
+                messagesContainer.innerHTML = '';
+            } else {
+                // Remove load more button if it exists
+                const loadMoreBtn = document.getElementById('load-more-btn');
+                if (loadMoreBtn) {
+                    loadMoreBtn.remove();
+                }
+            }
             
             if (!messages || messages.length === 0) {
-                messagesContainer.innerHTML = '<div class="loading-indicator">No messages yet</div>';
+                if (!append) {
+                    messagesContainer.innerHTML = '<div class="loading-indicator">No messages yet</div>';
+                }
                 return;
             }
             
-            // Sort messages by timestamp (oldest first)
+            // Sort messages by timestamp (oldest first for proper display order)
             messages.sort((a, b) => a.timestamp - b.timestamp);
             
+            // Keep track of oldest message for pagination
+            if (messages.length > 0) {
+                const oldestMessage = messages[0];
+                oldestMessageTimestamp = oldestMessage.timestamp;
+            }
+            
+            // Create a document fragment to batch DOM operations
+            const fragment = document.createDocumentFragment();
+            
+            if (messages.length >= 20) {  // If we got a full page, there might be more
+                // Add "Load More" button at the beginning (top)
+                const loadMoreBtn = document.createElement('div');
+                loadMoreBtn.id = 'load-more-btn';
+                loadMoreBtn.className = 'load-more-btn';
+                loadMoreBtn.textContent = 'Load More Messages';
+                loadMoreBtn.addEventListener('click', () => loadOlderMessages(conversationId));
+                fragment.appendChild(loadMoreBtn);
+            }
+            
+            // Add messages to fragment
             messages.forEach(message => {
-                addMessageToUI(message);
+                const messageElement = createMessageElement(message);
+                fragment.appendChild(messageElement);
             });
             
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // If appending (loading more), add to top of container
+            if (append) {
+                messagesContainer.prepend(fragment);
+            } else {
+                messagesContainer.appendChild(fragment);
+                // Scroll to bottom for initial load
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
         } catch (error) {
             console.error('Error loading messages:', error);
-            messagesContainer.innerHTML = '<div class="loading-indicator">Failed to load messages</div>';
+            if (!append) {
+                messagesContainer.innerHTML = '<div class="loading-indicator">Failed to load messages</div>';
+            }
         }
     }
     
-    // Add a message to the UI
-    function addMessageToUI(message) {
+    // Load older messages
+    async function loadOlderMessages(conversationId) {
+        if (oldestMessageTimestamp) {
+            await loadMessages(conversationId, oldestMessageTimestamp, true);
+        }
+    }
+    
+    // Create a message element
+    function createMessageElement(message) {
         const isCurrentUser = message.sender.id === currentUser.id;
         
         const messageElement = document.createElement('div');
         messageElement.className = `message ${isCurrentUser ? 'sent' : 'received'}`;
         messageElement.dataset.id = message.id;
+        messageElement.dataset.timestamp = message.timestamp; // Store timestamp for reference
         
         // Format timestamp
         const date = new Date(message.timestamp * 1000);
@@ -171,9 +224,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="message-time">${timeString}</div>
         `;
         
-        messagesContainer.appendChild(messageElement);
+        return messageElement;
+    }
+    
+    // Add a message to the UI (for new incoming messages via WebSocket)
+    function addMessageToUI(message) {
+        const messageElement = createMessageElement(message);
+        messagesContainer.appendChild(messageElement); // Add to the bottom (newest)
         
-        // Scroll to bottom
+        // Scroll to bottom to see the newest message
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
     

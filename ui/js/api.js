@@ -88,8 +88,18 @@ const API = {
         });
     },
     
-    async getConversationMessages(conversationId) {
-        return this.fetch(`/v1/conversations/${conversationId}/messages`);
+    async getConversationMessages(conversationId, params = {}) {
+        // Build query string from params object
+        const queryParams = new URLSearchParams();
+        if (params.limit) queryParams.append('limit', params.limit);
+        if (params.before) queryParams.append('before', params.before);
+        
+        const queryString = queryParams.toString();
+        const url = queryString 
+            ? `/v1/conversations/${conversationId}/messages?${queryString}`
+            : `/v1/conversations/${conversationId}/messages`;
+            
+        return this.fetch(url);
     },
     
     // WebSocket connection

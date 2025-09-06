@@ -1,6 +1,6 @@
 from app.models.message import MessageResponse
 from app.services.message_service import MessageService
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import JSONResponse
 import logging
 from typing import List
@@ -97,17 +97,22 @@ async def get_conversations(request: Request, current_user = Depends(get_current
 async def get_conversation_messages(
     request: Request,
     conversation_id: str,
+    limit: int = Query(50),
+    before: float = Query(None),
     user = Depends(get_current_user)
 ):
     try:
         logger.info(f"Message fetch request for conversation {conversation_id}",
                     extra={
                         "username": user.username, 
-                        "request_id": request.state.request_id
+                        "request_id": request.state.request_id,
+                        "conversation_id": conversation_id,
+                        "limit": limit,
+                        "before": before
                     })
         
         message_service: MessageService = request.app.state.message_service
-        messages = message_service.get_messages(conversation_id, before_timestamp=time.time())
+        messages = message_service.get_messages(conversation_id=conversation_id, limit=limit, before_timestamp=before)
         conversation_service = request.app.state.conversation_service
 
         if not conversation_service.check_if_user_has_access_to_conversation(user.id, conversation_id):

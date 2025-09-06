@@ -348,3 +348,22 @@ body {
     color: #999;
     text-align: center;
 }
+
+/* Load More button */
+.load-more-btn {
+    align-self: center;
+    margin: 10px 0;
+    padding: 8px 16px;
+    background-color: #f1f1f1;
+    border-radius: 20px;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.load-more-btn:hover {
+    background-color: #e0e0e0;
+    color: #333;
+}
