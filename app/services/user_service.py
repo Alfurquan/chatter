@@ -7,6 +7,7 @@ from app.utils.cache import Cache
 from app.repositories.user_repository import UserRepository
 from app.models.user import User, UserRegistrationRequest, UserResponse, UserStatus
 from app.security.password_security import hash_password, verify_password
+from app.serializers.user_serializer import UserSerializer
 
 class UserService:
     USER_ID_PREFIX = "user:id"
@@ -47,11 +48,11 @@ class UserService:
         if self.cache:
             cached_user = self.cache.get_cached(f"{self.USER_USERNAME_PREFIX}:{username}")
             if cached_user:
-                return cached_user
+                return UserSerializer.from_dict(cached_user)
         
         user = self.repo.get_by_username(username)
         if self.cache and user:
-            self.cache.set_cache(f"{self.USER_USERNAME_PREFIX}:{username}", user, self.TTL)
+            self.cache.set_cache(f"{self.USER_USERNAME_PREFIX}:{username}", UserSerializer.to_dict(user), self.TTL)
         return user
 
     def get_user_by_id(self, id: str) -> Optional[User]:
@@ -60,11 +61,17 @@ class UserService:
         """
         if self.cache:
             cached_user = self.cache.get_cached(f"{self.USER_ID_PREFIX}:{id}")
+            print(f"Raw cached user: {cached_user}")
             if cached_user:
-                return cached_user
+                print(f"CACHE HIT TYPE: {type(cached_user)}")
+                print(f"CACHE HIT VALUE: {cached_user}")
+                return UserSerializer.from_dict(cached_user)
         user = self.repo.get_by_id(id)
         if self.cache and user:
-            self.cache.set_cache(f"{self.USER_ID_PREFIX}:{id}", user, self.TTL)
+            user_dict = UserSerializer.to_dict(user)
+            print(f"STORING TYPE: {type(user_dict)}")
+            print(f"STORING VALUE: {user_dict}")
+            self.cache.set_cache(f"{self.USER_ID_PREFIX}:{id}", user_dict, self.TTL)
         return user
     
     def get_user_response(self, id: str) -> Optional[UserResponse]:
@@ -99,9 +106,9 @@ class UserService:
         if self.cache:
             cached_users = self.cache.get_cached(self.USERS_ALL_KEY)
             if cached_users:
-                return cached_users
+                return [UserSerializer.from_dict(u) for u in cached_users]
             users = self.repo.get_all()
-            self.cache.set_cache(self.USERS_ALL_KEY, users, self.TTL)
+            self.cache.set_cache(self.USERS_ALL_KEY, [UserSerializer.to_dict(u) for u in users], self.TTL)
             return users
                 
     def update_user_status(self, user_id: str, status: UserStatus) -> Optional[User]:

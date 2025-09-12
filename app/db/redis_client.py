@@ -17,7 +17,7 @@ class RedisClient:
                 host=self.host,
                 port=self.port,
                 db=self.db,
-                decode_responses=True
+                decode_responses=False
             )
         try:
             self._client.ping()
