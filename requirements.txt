@@ -9,3 +9,5 @@ PyJWT==2.10.1
 websockets>=10.4
 sqlalchemy>=2.0.20
 psycopg2-binary>=2.9.6
+redis[async]>=5.0.0
+redis[hiredis]>=5.0.0

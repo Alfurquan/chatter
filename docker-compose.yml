@@ -16,8 +16,13 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   ui:
@@ -49,5 +54,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:alpine
+    container_name: chatter_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   db_data:
+  redis_data:
