@@ -61,16 +61,11 @@ class UserService:
         """
         if self.cache:
             cached_user = self.cache.get_cached(f"{self.USER_ID_PREFIX}:{id}")
-            print(f"Raw cached user: {cached_user}")
             if cached_user:
-                print(f"CACHE HIT TYPE: {type(cached_user)}")
-                print(f"CACHE HIT VALUE: {cached_user}")
                 return UserSerializer.from_dict(cached_user)
         user = self.repo.get_by_id(id)
         if self.cache and user:
             user_dict = UserSerializer.to_dict(user)
-            print(f"STORING TYPE: {type(user_dict)}")
-            print(f"STORING VALUE: {user_dict}")
             self.cache.set_cache(f"{self.USER_ID_PREFIX}:{id}", user_dict, self.TTL)
         return user
     
